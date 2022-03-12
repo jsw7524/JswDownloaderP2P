@@ -24,20 +24,24 @@ namespace MyApp // Note: actual namespace depends on the project name.
                     
                     {
                         await requestStream.WriteAsync(bytes, 0, bytes.Length);
+                        Console.WriteLine("file request");
+
                         var responseBytes = new byte[256];
                         await requestStream.ReadAsync(responseBytes, 0, responseBytes.Length);
 
-                        Console.WriteLine(Encoding.UTF8.GetString(responseBytes));
+                        Console.WriteLine("file size"+Encoding.UTF8.GetString(responseBytes));
 
                         int sizeFile = int.Parse(Encoding.UTF8.GetString(responseBytes));
                         byte[] buffer = new byte[sizeFile];
                         await requestStream.ReadAsync(buffer, 0, sizeFile);
+                        Console.WriteLine("get file Data");
                         using (var destination = new FileStream(DateTime.Now.ToString("yyyyMMddhhmmss") + filename, FileMode.Create))
                         {
                             await destination.WriteAsync(buffer, 0, buffer.Length);
                             destination.Flush();
 
                         }
+                        Console.WriteLine("save file");
                         //StreamReader sr = new StreamReader(requestStream);
                         //sr.Read()
 

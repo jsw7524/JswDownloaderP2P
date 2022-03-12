@@ -28,23 +28,26 @@ namespace MyApp // Note: actual namespace depends on the project name.
     {
         static int Main(string[] args)
         {
-             CommandLine.Parser.Default.ParseArguments<DownloadOptions, DefulatOptions, CloneOptions>(args)
-              .MapResult(
-                (DownloadOptions opts) =>
-                {
-                    Downloader downloader = new Downloader();
-                    downloader.DownloadFileAsync("127.0.0.1", 54321, opts.File);
-                    return 0;
-                },
-                (DefulatOptions opts) =>
-                {
-                    FileServer server = new FileServer();
-                    server.Start();
-                    return 0;
-                },
-                (CloneOptions opts) => { Console.WriteLine("C"); return 0; },
-                errs => 1);
 
+            CommandLine.Parser.Default.ParseArguments<DownloadOptions, DefulatOptions, CloneOptions>(args)
+             .MapResult(
+               (DownloadOptions opts) =>
+               {
+
+                   Downloader downloader = new Downloader();
+                   downloader.DownloadFileAsync("172.23.176.1", 54321, opts.File);
+
+                   return 0;
+               },
+               (DefulatOptions opts) =>
+               {
+
+                   FileServer server = new FileServer();
+                   server.Start();
+                   return 0;
+               },
+               (CloneOptions opts) => { Console.WriteLine("C"); return 0; },
+               errs => 1);
             while (true) ;
             return 0;
         }
