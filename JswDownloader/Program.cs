@@ -3,6 +3,8 @@ using System;
 
 namespace MyApp // Note: actual namespace depends on the project name.
 {
+
+
     [Verb("download", HelpText = "Add file contents to the index.")]
     class DownloadOptions
     {

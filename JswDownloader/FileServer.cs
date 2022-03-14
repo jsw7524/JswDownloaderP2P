@@ -7,6 +7,9 @@ namespace MyApp // Note: actual namespace depends on the project name.
 {
     public class FileServer
     {
+
+
+
         private async Task DealRequest(TcpListener server)
         {
             TcpClient client = await server.AcceptTcpClientAsync();
