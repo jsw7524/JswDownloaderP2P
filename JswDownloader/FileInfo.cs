@@ -2,12 +2,14 @@
 {
     public class JswFileInfo
     {
-        public string fileName;
-        public int fileSize;
-        public int totalBlocks;
-        public int ownedBlocks;
-        public int blockSize;
-        public int?[] blockMap;
-        public List<string> peers;
+        public string fileName { get; set; }
+        public int fileSize { get; set; }
+        public int totalBlocks { get; set; }
+        public int ownedBlocks { get; set; }
+        public int blockSize { get; set; }
+        public int?[] blockMap { get; set; }
+        public int?[] blockStart { get; set; }
+        public int?[] blockEnd { get; set; }
+        public List<string> peers { get; set; }
     }
 }

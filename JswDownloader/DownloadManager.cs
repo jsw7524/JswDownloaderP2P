@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace JswDownloader
@@ -22,19 +23,35 @@ namespace JswDownloader
             fileInfo.totalBlocks = (int)Math.Ceiling((double)content.Length / _blockSize);
             fileInfo.ownedBlocks = (int)Math.Ceiling((double)content.Length / _blockSize);
 
-            fileInfo.blockMap=new int?[fileInfo.totalBlocks];
-
+            fileInfo.blockMap = new int?[fileInfo.totalBlocks];
+            fileInfo.blockStart = new int?[fileInfo.totalBlocks];
+            fileInfo.blockEnd = new int?[fileInfo.totalBlocks];
             using (SHA256 mySHA256 = SHA256.Create())
             {
                 int i = 0;
-                for (i = 0; i < fileInfo.totalBlocks-1; i++)
+                for (i = 0; i < fileInfo.totalBlocks - 1; i++)
                 {
+                    fileInfo.blockStart[i] = i * _blockSize;
+                    fileInfo.blockEnd[i] = i * _blockSize + _blockSize;
                     fileInfo.blockMap[i] = BitConverter.ToInt32(mySHA256.ComputeHash(content, i * _blockSize, _blockSize));
                 }
-                fileInfo.blockMap[i] = BitConverter.ToInt32(mySHA256.ComputeHash(content, i * _blockSize, fileInfo.fileSize- i * _blockSize));
+                fileInfo.blockStart[i] = i * _blockSize;
+                fileInfo.blockEnd[i] = fileInfo.fileSize - i * _blockSize;
+                fileInfo.blockMap[i] = BitConverter.ToInt32(mySHA256.ComputeHash(content, i * _blockSize, fileInfo.fileSize - i * _blockSize));
             }
             return fileInfo;
         }
+
+        public string ToJason<T>(T obj)
+        {
+            return JsonSerializer.Serialize<T>(obj);
+        }
+
+        public T ToInstance<T>(string jsn)
+        {
+            return JsonSerializer.Deserialize<T>(jsn);
+        }
+
 
     }
 }

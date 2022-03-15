@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "JswDownloader": {
+      "commandName": "Project",
+      "commandLineArgs": "download 172.23.190.40"
+    }
+  }
+}

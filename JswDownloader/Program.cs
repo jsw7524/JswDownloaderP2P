@@ -9,16 +9,23 @@ namespace MyApp // Note: actual namespace depends on the project name.
     class DownloadOptions
     {
         [Value(0)]
+        public string IpAddress
+        {
+            get;
+            set;
+        }
+
+
+    }
+    [Verb("Server", isDefault: true, HelpText = "Record changes to the repository.")]
+    class DefulatOptions
+    {
+        [Value(0)]
         public string File
         {
             get;
             set;
         }
-    }
-    [Verb("Server", isDefault: true, HelpText = "Record changes to the repository.")]
-    class DefulatOptions
-    {
-        //commit options here
     }
     [Verb("clone", HelpText = "Clone a repository into a new directory.")]
     class CloneOptions
@@ -35,16 +42,15 @@ namespace MyApp // Note: actual namespace depends on the project name.
              .MapResult(
                (DownloadOptions opts) =>
                {
-
                    Downloader downloader = new Downloader();
-                   downloader.DownloadFileAsync("172.23.176.1", 54321, opts.File);
+                   downloader.DownloadFileAsync(opts.IpAddress, 54321);
 
                    return 0;
                },
                (DefulatOptions opts) =>
                {
-
-                   FileServer server = new FileServer();
+                   Console.WriteLine($"Server running for {opts.File}");
+                   FileServer server = new FileServer(opts.File);
                    server.Start();
                    return 0;
                },

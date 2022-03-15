@@ -14,5 +14,18 @@ namespace TestProject1
             JswFileInfo info =downloadManager.CreateFileInfo("water.jpg");
             Assert.AreEqual("water.jpg", info.fileName);
         }
+
+
+        [TestMethod]
+        public void TestMethod2()
+        {
+            DownloadManager downloadManager = new DownloadManager();
+            JswFileInfo info = downloadManager.CreateFileInfo("water.jpg");
+            string jsn = downloadManager.ToJason<JswFileInfo>(info);
+            //Assert.AreEqual("water.jpg", info.fileName);
+        }
+
+
+
     }
 }
