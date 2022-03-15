@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -12,6 +13,21 @@ namespace JswDownloader
     public class DownloadManager
     {
         int _blockSize = 2 * 1024 * 1024;
+
+        public static object BytesToStruct(byte[] bytes, Type strcutType)
+        {
+            int size = Marshal.SizeOf(strcutType);
+            IntPtr buffer = Marshal.AllocHGlobal(size);
+            try
+            {
+                Marshal.Copy(bytes, 0, buffer, size);
+                return Marshal.PtrToStructure(buffer, strcutType);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(buffer);
+            }
+        }
 
         public JswFileInfo CreateFileInfo(string fileName)
         {

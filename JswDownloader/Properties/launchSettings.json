@@ -3,6 +3,10 @@
     "JswDownloader": {
       "commandName": "Project",
       "commandLineArgs": "download 172.23.190.40"
+    },
+    "Profile 1": {
+      "commandName": "Project",
+      "commandLineArgs": "water.jpg"
     }
   }
 }

@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace MyApp // Note: actual namespace depends on the project name.
@@ -15,18 +16,27 @@ namespace MyApp // Note: actual namespace depends on the project name.
             _downloadManager = new DownloadManager();
         }
 
-        public async Task<JswFileInfo> GetFileInfo(NetworkStream rs, DownloadManager dm)
+        public async Task<JswFileInfo> GetFileInfo(NetworkStream ns, DownloadManager dm)
         {
-            byte[] cmdGetFileInfo = Encoding.UTF8.GetBytes("GetFileInfo");
-            await rs.WriteAsync(cmdGetFileInfo, 0, cmdGetFileInfo.Length);
-            var sizeInfoBytes = new byte[4];
-            await rs.ReadAsync(sizeInfoBytes, 0, 4);
-            int sizeInfo = BitConverter.ToInt32(sizeInfoBytes);
-            Console.WriteLine(sizeInfo);
-            var infoFileBytes = new byte[sizeInfo];
-            await rs.ReadAsync(infoFileBytes, 0, infoFileBytes.Length);
-            string jsn = Encoding.UTF8.GetString(infoFileBytes);
-            return _downloadManager.ToInstance<JswFileInfo>(jsn);
+            Command cmdGetFileInfo = new Command() { commandType = CommandType.RequestFileInfo};
+            await ns.WriteAsync(cmdGetFileInfo.ToBytes(), 0, Marshal.SizeOf(typeof(Command)));
+            Byte[] ResponseBytes = new Byte[Marshal.SizeOf(typeof(Command))];
+            await ns.ReadAsync(ResponseBytes, 0, Marshal.SizeOf(typeof(Command)));
+            Command ResponseCommand = (Command)DownloadManager.BytesToStruct(ResponseBytes, typeof(Command));
+            byte[] byteFileInfo = new byte[ResponseCommand.parameter1];
+            await ns.ReadAsync(byteFileInfo, 0, ResponseCommand.parameter1);
+            return dm.ToInstance<JswFileInfo>(Encoding.UTF8.GetString(byteFileInfo)); ;
+
+            //byte[] cmdGetFileInfo = Encoding.UTF8.GetBytes("GetFileInfo");
+            //await rs.WriteAsync(cmdGetFileInfo, 0, cmdGetFileInfo.Length);
+            //var sizeInfoBytes = new byte[4];
+            //await rs.ReadAsync(sizeInfoBytes, 0, 4);
+            //int sizeInfo = BitConverter.ToInt32(sizeInfoBytes);
+            //Console.WriteLine(sizeInfo);
+            //var infoFileBytes = new byte[sizeInfo];
+            //await rs.ReadAsync(infoFileBytes, 0, infoFileBytes.Length);
+            //string jsn = Encoding.UTF8.GetString(infoFileBytes);
+            //return _downloadManager.ToInstance<JswFileInfo>(jsn);
         }
 
         public async Task<bool> DownloadFileAsync(string ip, int port)
