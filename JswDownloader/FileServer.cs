@@ -16,8 +16,8 @@ namespace MyApp // Note: actual namespace depends on the project name.
         private DownloadManager _downloadManager;
         public FileServer(string fileNmae)
         {
-            _downloadManager = new DownloadManager();
-            _fileInfo = _downloadManager.CreateFileInfo(fileNmae);
+            _downloadManager = new DownloadManager(fileNmae);
+            _fileInfo = _downloadManager.GetFileInfo();
         }
 
         public async Task RespondFileInfo(NetworkStream ns, DownloadManager dm)
@@ -27,6 +27,15 @@ namespace MyApp // Note: actual namespace depends on the project name.
             await ns.WriteAsync(cmdResponseFileInfo.ToBytes(), 0, Marshal.SizeOf(typeof(Command)));
             byte[] responseBytes = Encoding.UTF8.GetBytes(jsn);
             await ns.WriteAsync(responseBytes, 0, responseBytes.Length);
+        }
+
+        public async Task RespondDataBlock(NetworkStream ns, DownloadManager dm, int i)
+        {
+            Command cmdResponseDataBlock = new Command() { commandType = CommandType.RequestBlock };
+            await ns.WriteAsync(cmdResponseDataBlock.ToBytes(), 0, Marshal.SizeOf(typeof(Command)));
+            byte[] responseBytes = _downloadManager.GetDataBlock(i);
+            await ns.WriteAsync(responseBytes, 0, responseBytes.Length);
+            dm.WriteDataBlock(i, responseBytes);
         }
 
         private async Task DealRequest(TcpListener server)
@@ -56,6 +65,10 @@ namespace MyApp // Note: actual namespace depends on the project name.
 
                         //await tcpStream.WriteAsync(responseMessage, 0, responseMessage.Length);
 
+                        break;
+
+                    case CommandType.RequestBlock:
+                        await RespondDataBlock(tcpStream, _downloadManager, requestCommand.parameter1);
                         break;
                 }
 

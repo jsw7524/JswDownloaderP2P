@@ -10,10 +10,12 @@ namespace MyApp // Note: actual namespace depends on the project name.
     public class Downloader
     {
         DownloadManager _downloadManager;
+        Random random;
 
         public Downloader()
         {
             _downloadManager = new DownloadManager();
+            random=new Random();
         }
 
         public async Task<JswFileInfo> GetFileInfo(NetworkStream ns, DownloadManager dm)
@@ -26,17 +28,12 @@ namespace MyApp // Note: actual namespace depends on the project name.
             byte[] byteFileInfo = new byte[ResponseCommand.parameter1];
             await ns.ReadAsync(byteFileInfo, 0, ResponseCommand.parameter1);
             return dm.ToInstance<JswFileInfo>(Encoding.UTF8.GetString(byteFileInfo)); ;
+        }
 
-            //byte[] cmdGetFileInfo = Encoding.UTF8.GetBytes("GetFileInfo");
-            //await rs.WriteAsync(cmdGetFileInfo, 0, cmdGetFileInfo.Length);
-            //var sizeInfoBytes = new byte[4];
-            //await rs.ReadAsync(sizeInfoBytes, 0, 4);
-            //int sizeInfo = BitConverter.ToInt32(sizeInfoBytes);
-            //Console.WriteLine(sizeInfo);
-            //var infoFileBytes = new byte[sizeInfo];
-            //await rs.ReadAsync(infoFileBytes, 0, infoFileBytes.Length);
-            //string jsn = Encoding.UTF8.GetString(infoFileBytes);
-            //return _downloadManager.ToInstance<JswFileInfo>(jsn);
+        public async Task GetDataBlock(NetworkStream ns, DownloadManager dm, JswFileInfo remoteFileInfo, int i)
+        {
+            Command cmdGetBlock = new Command() { commandType = CommandType.RequestBlock, parameter1=i };
+            await ns.WriteAsync(cmdGetBlock.ToBytes(), 0, Marshal.SizeOf(typeof(Command)));
         }
 
         public async Task<bool> DownloadFileAsync(string ip, int port)
@@ -50,7 +47,6 @@ namespace MyApp // Note: actual namespace depends on the project name.
                     if (client.Connected)
                     {
                         Console.WriteLine("We've connected from the client");
-
                     }
                     //Debugger.Launch();
                     using (NetworkStream requestStream = client.GetStream())
@@ -58,29 +54,15 @@ namespace MyApp // Note: actual namespace depends on the project name.
 
                         JswFileInfo fileInfo = await GetFileInfo(requestStream, _downloadManager);
 
-                        int ikkk = 0;
-                        //await requestStream.WriteAsync(bytes, 0, bytes.Length);
-                        //Console.WriteLine("file request");
+                        int randomStartBlcok = random.Next(0, fileInfo.totalBlocks -1);
 
-                        //var responseBytes = new byte[256];
-                        //await requestStream.ReadAsync(responseBytes, 0, responseBytes.Length);
-
-                        //Console.WriteLine("file size"+Encoding.UTF8.GetString(responseBytes));
-
-                        //int sizeFile = int.Parse(Encoding.UTF8.GetString(responseBytes));
-                        //byte[] buffer = new byte[sizeFile];
-                        //await requestStream.ReadAsync(buffer, 0, sizeFile);
-                        //Console.WriteLine("get file Data");
-                        //using (var destination = new FileStream(DateTime.Now.ToString("yyyyMMddhhmmss") + filename, FileMode.Create))
-                        //{
-                        //    await destination.WriteAsync(buffer, 0, buffer.Length);
-                        //    destination.Flush();
-
-                        //}
-                        //Console.WriteLine("save file");
-                        //StreamReader sr = new StreamReader(requestStream);
-                        //sr.Read()
-
+                        for (int i = (randomStartBlcok+1) % fileInfo.totalBlocks; i != fileInfo.totalBlocks; i = (i + 1) % fileInfo.totalBlocks)
+                        {
+                            if (null != fileInfo.blockMap[i])
+                            {
+                                await GetDataBlock(requestStream, _downloadManager, fileInfo, i);
+                            }
+                        }
                     }
                 }
                 return true;
