@@ -21,7 +21,7 @@ namespace MyApp // Note: actual namespace depends on the project name.
 
         public async Task RespondFileInfo(NetworkStream ns, DownloadManager dm)
         {
-            string jsn = dm.ToJason(_downloadManager.GetFileInfo());
+            string jsn = dm.ToJason(_downloadManager.GetOwnedFileInfo());
             Command cmdResponseFileInfo = new Command() { commandType = CommandType.ResponseFileInfo, parameter1 = jsn.Length };
             await ns.WriteAsync(cmdResponseFileInfo.ToBytes(), 0, Marshal.SizeOf(typeof(Command)));
             byte[] responseBytes = Encoding.UTF8.GetBytes(jsn);

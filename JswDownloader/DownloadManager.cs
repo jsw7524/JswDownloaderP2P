@@ -14,72 +14,89 @@ namespace JswDownloader
     {
         int _blockSize = 2 * 1024 * 1024;
         byte[] _dataContent;
-        JswFileInfo _fileInfo;
+        JswFileInfo _originalFileInfo;
+
+        JswFileInfo _ownedFileInfo;
+
         ArraySegment<byte> arraySegment;
         SHA256 mySHA256;
 
         public DownloadManager()
         {
             //CreateFileInfo(fileName);
-            SHA256 mySHA256 = SHA256.Create();
+            mySHA256 = SHA256.Create();
         }
 
-        public JswFileInfo GetFileInfo()
+        public JswFileInfo GetOwnedFileInfo()
         {
-            return _fileInfo;
+            return _ownedFileInfo;
+        }
+
+        public JswFileInfo ReadFileInfo(string fileName)
+        {
+            string jsn=File.ReadAllText(fileName);
+            _originalFileInfo=ToInstance<JswFileInfo>(jsn);
+            return _originalFileInfo;
+        }
+        public void SaveFileInfo(JswFileInfo fileInfo, string savefileName= "TestFileInfo.txt")
+        {
+            string jsn = ToJason(fileInfo);
+            File.WriteAllText(savefileName, jsn);
         }
 
         public byte[] GetDataBlock(int blockIndex)
         {
-            int start = (int)_fileInfo.blockStart[blockIndex];
-            int end = (int)_fileInfo.blockEnd[blockIndex];
+            int start = (int)_originalFileInfo.blockStart[blockIndex];
+            int end = (int)_originalFileInfo.blockEnd[blockIndex];
             return (arraySegment.Slice(start, end - start)).ToArray();
         }
 
         public bool WriteDataBlock(int blockIndex, byte[] data)
         {
             int tmp=BitConverter.ToInt32(mySHA256.ComputeHash(data, 0, data.Length));
-            if (tmp != _fileInfo.blockMap[blockIndex])
+            if (tmp != _originalFileInfo.blockMap[blockIndex])
             {
                 return false;
             }
             data.CopyTo(_dataContent, blockIndex * _blockSize);
+
+            _ownedFileInfo.blockMap[blockIndex] = tmp;
+            _ownedFileInfo.ownedBlocks += 1;
             return true;
         }
 
         public JswFileInfo CreateFileInfo(string fileName)
         {
-            if (null != _fileInfo)
-            {
-                return _fileInfo;
-            }
+
             _dataContent = File.ReadAllBytes(fileName);
 
             arraySegment = new ArraySegment<byte>(_dataContent);
 
-            _fileInfo = new JswFileInfo();
-            _fileInfo.fileName = fileName;
-            _fileInfo.fileSize = _dataContent.Length;
-            _fileInfo.blockSize = _blockSize;
-            _fileInfo.totalBlocks = (int)Math.Ceiling((double)_dataContent.Length / _blockSize);
-            _fileInfo.ownedBlocks = (int)Math.Ceiling((double)_dataContent.Length / _blockSize);
+            _originalFileInfo = new JswFileInfo();
+            _originalFileInfo.fileName = fileName;
+            _originalFileInfo.fileSize = _dataContent.Length;
+            _originalFileInfo.blockSize = _blockSize;
+            _originalFileInfo.totalBlocks = (int)Math.Ceiling((double)_dataContent.Length / _blockSize);
+            _originalFileInfo.ownedBlocks = (int)Math.Ceiling((double)_dataContent.Length / _blockSize);
 
-            _fileInfo.blockMap = new int?[_fileInfo.totalBlocks];
-            _fileInfo.blockStart = new int?[_fileInfo.totalBlocks];
-            _fileInfo.blockEnd = new int?[_fileInfo.totalBlocks];
+            _originalFileInfo.blockMap = new int?[_originalFileInfo.totalBlocks];
+            _originalFileInfo.blockStart = new int?[_originalFileInfo.totalBlocks];
+            _originalFileInfo.blockEnd = new int?[_originalFileInfo.totalBlocks];
 
             int i = 0;
-            for (i = 0; i < _fileInfo.totalBlocks - 1; i++)
+            for (i = 0; i < _originalFileInfo.totalBlocks - 1; i++)
             {
-                _fileInfo.blockStart[i] = i * _blockSize;
-                _fileInfo.blockEnd[i] = i * _blockSize + _blockSize;
-                _fileInfo.blockMap[i] = BitConverter.ToInt32(mySHA256.ComputeHash(_dataContent, i * _blockSize, _blockSize));
+                _originalFileInfo.blockStart[i] = i * _blockSize;
+                _originalFileInfo.blockEnd[i] = i * _blockSize + _blockSize;
+                _originalFileInfo.blockMap[i] = BitConverter.ToInt32(mySHA256.ComputeHash(_dataContent, i * _blockSize, _blockSize));
             }
-            _fileInfo.blockStart[i] = i * _blockSize;
-            _fileInfo.blockEnd[i] = _fileInfo.fileSize - i * _blockSize;
-            _fileInfo.blockMap[i] = BitConverter.ToInt32(mySHA256.ComputeHash(_dataContent, i * _blockSize, _fileInfo.fileSize - i * _blockSize));
+            _originalFileInfo.blockStart[i] = i * _blockSize;
+            _originalFileInfo.blockEnd[i] = _originalFileInfo.fileSize - i * _blockSize;
+            _originalFileInfo.blockMap[i] = BitConverter.ToInt32(mySHA256.ComputeHash(_dataContent, i * _blockSize, _originalFileInfo.fileSize - i * _blockSize));
 
-            return _fileInfo;
+            _ownedFileInfo = _originalFileInfo;
+
+            return _originalFileInfo;
         }
 
         public string ToJason<T>(T obj)
