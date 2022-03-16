@@ -12,17 +12,16 @@ namespace MyApp // Note: actual namespace depends on the project name.
 
     public class FileServer
     {
-        private JswFileInfo _fileInfo;
         private DownloadManager _downloadManager;
         public FileServer(string fileNmae)
         {
-            _downloadManager = new DownloadManager(fileNmae);
-            _fileInfo = _downloadManager.GetFileInfo();
+            _downloadManager = new DownloadManager();
+            _downloadManager.CreateFileInfo(fileNmae);
         }
 
         public async Task RespondFileInfo(NetworkStream ns, DownloadManager dm)
         {
-            string jsn = dm.ToJason(_fileInfo);
+            string jsn = dm.ToJason(_downloadManager.GetFileInfo());
             Command cmdResponseFileInfo = new Command() { commandType = CommandType.ResponseFileInfo, parameter1 = jsn.Length };
             await ns.WriteAsync(cmdResponseFileInfo.ToBytes(), 0, Marshal.SizeOf(typeof(Command)));
             byte[] responseBytes = Encoding.UTF8.GetBytes(jsn);
@@ -35,7 +34,7 @@ namespace MyApp // Note: actual namespace depends on the project name.
             await ns.WriteAsync(cmdResponseDataBlock.ToBytes(), 0, Marshal.SizeOf(typeof(Command)));
             byte[] responseBytes = _downloadManager.GetDataBlock(i);
             await ns.WriteAsync(responseBytes, 0, responseBytes.Length);
-            dm.WriteDataBlock(i, responseBytes);
+
         }
 
         private async Task DealRequest(TcpListener server)
@@ -48,45 +47,20 @@ namespace MyApp // Note: actual namespace depends on the project name.
             using (var tcpStream = (client.GetStream()))
             {
                 await tcpStream.ReadAsync(requestCommandByte, 0, Marshal.SizeOf(typeof(Command)));
-
                 Command requestCommand = (Command)DownloadManager.BytesToStruct(requestCommandByte, typeof(Command));
-
-
-                int yyy = 1;
-                //requestMessage = Encoding.UTF8.GetString(bytes).Replace("\0", string.Empty);
                 //Debugger.Launch();
                 switch (requestCommand.commandType)
                 {
                     case CommandType.RequestFileInfo:
                         await RespondFileInfo(tcpStream, _downloadManager);
-                        //string jsn = _downloadManager.ToJason(_fileInfo);
-                        //responseMessage = Encoding.UTF8.GetBytes(jsn);
-                        //await tcpStream.WriteAsync(BitConverter.GetBytes(responseMessage.Length), 0, 4);
-
-                        //await tcpStream.WriteAsync(responseMessage, 0, responseMessage.Length);
-
                         break;
 
                     case CommandType.RequestBlock:
                         await RespondDataBlock(tcpStream, _downloadManager, requestCommand.parameter1);
                         break;
                 }
-
-
-                //Console.WriteLine();
-                //Console.WriteLine("Message Received From Client:");
-                //Console.WriteLine(requestMessage);
-                //byte[] requestedfile = File.ReadAllBytes(requestMessage);
-                //Console.WriteLine("read file OK!");
-                //responseMessage = Encoding.UTF8.GetBytes(requestedfile.Length.ToString());
-                //await tcpStream.WriteAsync(responseMessage, 0, responseMessage.Length);
-                //Console.WriteLine("send file size OK!");
-                //await tcpStream.WriteAsync(requestedfile, 0, requestedfile.Length);
-                //Console.WriteLine("send file OK!");
             }
             client.Close();
-            //Thread.Sleep(10000);
-            //Console.WriteLine(requestMessage + " OK!");
         }
 
 

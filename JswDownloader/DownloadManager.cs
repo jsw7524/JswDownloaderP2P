@@ -18,9 +18,9 @@ namespace JswDownloader
         ArraySegment<byte> arraySegment;
         SHA256 mySHA256;
 
-        public DownloadManager(string fileName)
+        public DownloadManager()
         {
-            CreateFileInfo(fileName);
+            //CreateFileInfo(fileName);
             SHA256 mySHA256 = SHA256.Create();
         }
 
@@ -47,8 +47,12 @@ namespace JswDownloader
             return true;
         }
 
-        private JswFileInfo CreateFileInfo(string fileName)
+        public JswFileInfo CreateFileInfo(string fileName)
         {
+            if (null != _fileInfo)
+            {
+                return _fileInfo;
+            }
             _dataContent = File.ReadAllBytes(fileName);
 
             arraySegment = new ArraySegment<byte>(_dataContent);
@@ -73,7 +77,7 @@ namespace JswDownloader
             }
             _fileInfo.blockStart[i] = i * _blockSize;
             _fileInfo.blockEnd[i] = _fileInfo.fileSize - i * _blockSize;
-            _fileInfo.blockMap[i] = BitConverter.ToInt32(mySHA256.ComputeHash(_dataContent, i * _blockSize, fileInfo.fileSize - i * _blockSize));
+            _fileInfo.blockMap[i] = BitConverter.ToInt32(mySHA256.ComputeHash(_dataContent, i * _blockSize, _fileInfo.fileSize - i * _blockSize));
 
             return _fileInfo;
         }
