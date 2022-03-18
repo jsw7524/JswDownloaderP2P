@@ -13,9 +13,9 @@ namespace MyApp // Note: actual namespace depends on the project name.
     public class FileServer
     {
         private DownloadManager _downloadManager;
-        public FileServer(string fileNmae)
+        public FileServer(DownloadManager d, string fileNmae)
         {
-            _downloadManager = new DownloadManager();
+            _downloadManager = d;
             _downloadManager.CreateFileInfo(fileNmae);
         }
 
@@ -84,6 +84,7 @@ namespace MyApp // Note: actual namespace depends on the project name.
         {
             try
             {
+                _downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.EstablishServer, message = "Establishing Server." });
                 TcpListener server = new TcpListener(IPAddress.Any, 54321);
                 server.Start();
                 while (true)

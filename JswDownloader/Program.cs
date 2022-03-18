@@ -1,5 +1,7 @@
 ﻿using CommandLine;
+using JswDownloader;
 using System;
+using System.Timers;
 
 namespace MyApp // Note: actual namespace depends on the project name.
 {
@@ -35,22 +37,36 @@ namespace MyApp // Note: actual namespace depends on the project name.
 
     internal class Program
     {
+
+
+
         static int Main(string[] args)
         {
+
+            DownloadManager downloadManager = new DownloadManager();
+            MessageInfoManager messageInfoManager = new MessageInfoManager(downloadManager);
+            System.Timers.Timer timer = new System.Timers.Timer();
+
+            timer.Interval = 1000;
+            timer.Elapsed += (object? sender, ElapsedEventArgs e) =>
+            {
+                messageInfoManager.RunHandlers();
+            };
+            timer.Start();
 
             CommandLine.Parser.Default.ParseArguments<DownloadOptions, DefulatOptions, CloneOptions>(args)
              .MapResult(
                (DownloadOptions opts) =>
                {
-                   Downloader downloader = new Downloader();
+                   Downloader downloader = new Downloader(downloadManager);
                    downloader.DownloadFileAsync(opts.IpAddress, 54321);
 
                    return 0;
                },
                (DefulatOptions opts) =>
                {
-                   Console.WriteLine($"Server running for {opts.File}");
-                   FileServer server = new FileServer(opts.File);
+                   //Console.WriteLine($"Server running for {opts.File}");
+                   FileServer server = new FileServer(downloadManager,opts.File);
                    server.Start();
                    return 0;
                },

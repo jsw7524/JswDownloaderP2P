@@ -12,9 +12,9 @@ namespace MyApp // Note: actual namespace depends on the project name.
         DownloadManager _downloadManager;
         Random random;
 
-        public Downloader()
+        public Downloader(DownloadManager d)
         {
-            _downloadManager = new DownloadManager();
+            _downloadManager = d;
             random=new Random();
         }
 
@@ -43,6 +43,7 @@ namespace MyApp // Note: actual namespace depends on the project name.
         {
             Command cmdGetBlock = new Command() { commandType = CommandType.EndConnection};
             await ns.WriteAsync(cmdGetBlock.ToBytes(), 0, Marshal.SizeOf(typeof(Command)));
+            _downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.DisconnectFromServer, message = "Disconnect from a peer." });
         }
 
 
@@ -56,7 +57,9 @@ namespace MyApp // Note: actual namespace depends on the project name.
                     client.Connect(address, port);
                     if (client.Connected)
                     {
-                        Console.WriteLine("We've connected from the client");
+                        _downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.ConnectToServer, message = "connecting to a peer." });
+
+                        //Console.WriteLine("We've connected from the client");
                     }
                     //Debugger.Launch();
                     using (NetworkStream requestStream = client.GetStream())

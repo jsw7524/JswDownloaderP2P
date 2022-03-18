@@ -12,6 +12,8 @@ namespace JswDownloader
 {
     public class DownloadManager
     {
+        public Queue<MessageInfo> messages = new Queue<MessageInfo>();
+
         public int _blockSize = 2 * 1024 * 1024;
         public byte[] _dataContent;
         public JswFileInfo _originalFileInfo;
@@ -101,7 +103,9 @@ namespace JswDownloader
             bool done = localOwnedFileInfo.ownedBlocks == localOwnedFileInfo.totalBlocks ? true : false;
             if (done)
             {
-                File.WriteAllBytesAsync(DateTime.Now.ToString("yyyyMMddhhmmss")+localOwnedFileInfo.fileName, data);
+                messages.Enqueue(new MessageInfo() { type = MessageType.DownloadFileCompleted, message= "Download file Completed." });
+
+                //File.WriteAllBytesAsync(DateTime.Now.ToString("yyyyMMddhhmmss")+localOwnedFileInfo.fileName, data);
             }
             return done;
         }
