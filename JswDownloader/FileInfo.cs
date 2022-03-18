@@ -11,5 +11,10 @@
         public int?[] blockStart { get; set; }
         public int?[] blockEnd { get; set; }
         public List<string> peers { get; set; }
+
+        public JswFileInfo ShallowCopy()
+        {
+            return MemberwiseClone() as JswFileInfo;
+        }
     }
 }

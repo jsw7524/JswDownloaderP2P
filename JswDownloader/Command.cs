@@ -8,6 +8,7 @@ namespace MyApp // Note: actual namespace depends on the project name.
         ResponseFileInfo,
         RequestBlock,
         ResponseBlock,
+        EndConnection
     }
     public struct Command
     {

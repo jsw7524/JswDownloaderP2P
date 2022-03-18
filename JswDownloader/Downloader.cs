@@ -30,14 +30,21 @@ namespace MyApp // Note: actual namespace depends on the project name.
             return dm.ToInstance<JswFileInfo>(Encoding.UTF8.GetString(byteFileInfo)); ;
         }
 
-        public async Task GetDataBlock(NetworkStream ns, DownloadManager dm, JswFileInfo remoteFileInfo, int i)
+        public async Task GetDataBlock(NetworkStream ns, DownloadManager dm, int i)
         {
             Command cmdGetBlock = new Command() { commandType = CommandType.RequestBlock, parameter1=i };
             await ns.WriteAsync(cmdGetBlock.ToBytes(), 0, Marshal.SizeOf(typeof(Command)));
-            byte[] ResponseBytes = new byte[cmdGetBlock.parameter1];
+            byte[] ResponseBytes = new byte[(int)(dm._originalFileInfo.blockEnd[i]- dm._originalFileInfo.blockStart[i])];
             await ns.ReadAsync(ResponseBytes, 0, ResponseBytes.Length);
             dm.WriteDataBlock(i, ResponseBytes);
         }
+
+        public async Task EndConnection(NetworkStream ns)
+        {
+            Command cmdGetBlock = new Command() { commandType = CommandType.EndConnection};
+            await ns.WriteAsync(cmdGetBlock.ToBytes(), 0, Marshal.SizeOf(typeof(Command)));
+        }
+
 
         public async Task<bool> DownloadFileAsync(string ip, int port)
         {
@@ -57,16 +64,29 @@ namespace MyApp // Note: actual namespace depends on the project name.
 
                         JswFileInfo fileInfo = await GetFileInfo(requestStream, _downloadManager);
 
-                        int randomStartBlcok = random.Next(0, fileInfo.totalBlocks -1);
+                        //int randomStartBlcok = random.Next(0, fileInfo.totalBlocks -1);
+                        int randomStartBlcok = 0;
 
-                        for (int i = (randomStartBlcok+1) % fileInfo.totalBlocks; i != fileInfo.totalBlocks; i = (i + 1) % fileInfo.totalBlocks)
+                        _downloadManager._originalFileInfo = fileInfo;
+                        _downloadManager._ownedFileInfo = _downloadManager.CreateOwnedFileInfo(fileInfo);
+                        _downloadManager._dataContent = new byte[fileInfo.fileSize];
+
+                        if (null != fileInfo.blockMap[randomStartBlcok])
+                        {
+                            await GetDataBlock(requestStream, _downloadManager, randomStartBlcok);
+                        }
+
+                        for (int i = (randomStartBlcok+1) % fileInfo.totalBlocks; i != randomStartBlcok; i = (i + 1) % fileInfo.totalBlocks)
                         {
                             if (null != fileInfo.blockMap[i])
                             {
-                                await GetDataBlock(requestStream, _downloadManager, fileInfo, i);
+                                await GetDataBlock(requestStream, _downloadManager, i);
                             }
                         }
+                        _downloadManager.CheckData(_downloadManager._ownedFileInfo, _downloadManager._dataContent);
+                        await EndConnection(requestStream);
                     }
+
                 }
                 return true;
             }
