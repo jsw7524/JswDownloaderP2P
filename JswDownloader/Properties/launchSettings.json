@@ -6,7 +6,7 @@
     },
     "client": {
       "commandName": "Project",
-      "commandLineArgs": "download 127.0.0.1"
+      "commandLineArgs": "download water.jpg.fif"
     },
     "Server": {
       "commandName": "Project",

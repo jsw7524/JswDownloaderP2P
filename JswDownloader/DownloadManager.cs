@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -12,6 +14,8 @@ namespace JswDownloader
 {
     public class DownloadManager
     {
+        public bool _seeding=false;
+
         public Queue<MessageInfo> messages = new Queue<MessageInfo>();
 
         public int _blockSize = 2 * 1024 * 1024;
@@ -34,7 +38,19 @@ namespace JswDownloader
             tmp.ownedBlocks = 0;
             return tmp;
         }
-
+        public List<string> GetLocalIPAddress()
+        {
+            List<string> tmp= new List<string>();
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (var ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    tmp.Add(ip.ToString());
+                }
+            }
+            return tmp;
+        }
 
 
         public JswFileInfo ReadFileInfo(string fileName)
@@ -76,6 +92,7 @@ namespace JswDownloader
             int tmp=BitConverter.ToInt32(mySHA256.ComputeHash(data, 0, data.Length));
             if (tmp != soruceFileInfo.blockMap[blockIndex])
             {
+                messages.Enqueue(new MessageInfo() { type = MessageType.Misc, message = "hash dismatched and Discard downloading block" });
                 return false;
             }
             data.CopyTo(WriteToDataArea, blockIndex * _blockSize);
@@ -88,6 +105,13 @@ namespace JswDownloader
         public JswFileInfo CreateFileInfo(string fileName)
         {
             _originalFileInfo=CreateFileInfo(fileName, ref _dataContent);
+            _ownedFileInfo = _originalFileInfo;
+            _originalFileInfo.peers = new List<string>();
+#if DEBUG
+            //_originalFileInfo.peers.Add("127.0.0.1");
+#endif
+            _originalFileInfo.peers.AddRange(GetLocalIPAddress());
+            File.WriteAllTextAsync(fileName+".fif", ToJason(_originalFileInfo));
             return _originalFileInfo;
         }
 
@@ -104,8 +128,6 @@ namespace JswDownloader
             if (done)
             {
                 messages.Enqueue(new MessageInfo() { type = MessageType.DownloadFileCompleted, message= "Download file Completed." });
-
-                //File.WriteAllBytesAsync(DateTime.Now.ToString("yyyyMMddhhmmss")+localOwnedFileInfo.fileName, data);
             }
             return done;
         }

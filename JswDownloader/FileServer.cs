@@ -13,10 +13,9 @@ namespace MyApp // Note: actual namespace depends on the project name.
     public class FileServer
     {
         private DownloadManager _downloadManager;
-        public FileServer(DownloadManager d, string fileNmae)
+        public FileServer(DownloadManager d)
         {
             _downloadManager = d;
-            _downloadManager.CreateFileInfo(fileNmae);
         }
 
         public async Task RespondFileInfo(NetworkStream ns, DownloadManager dm)
@@ -43,10 +42,6 @@ namespace MyApp // Note: actual namespace depends on the project name.
             {
                 TcpClient client = await server.AcceptTcpClientAsync();
                 byte[] requestCommandByte = new byte[Marshal.SizeOf(typeof(Command))];
-                string requestMessage;
-                byte[] responseMessage;
-
-
                 bool jobDone = false;
                 using (var tcpStream = (client.GetStream()))
                 {
@@ -65,6 +60,7 @@ namespace MyApp // Note: actual namespace depends on the project name.
                                 await RespondDataBlock(tcpStream, _downloadManager, requestCommand.parameter1);
                                 break;
                             case CommandType.EndConnection:
+                                _downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.ClientLeave });
                                 jobDone = true;
                                 break;
                         }
@@ -86,6 +82,7 @@ namespace MyApp // Note: actual namespace depends on the project name.
             {
                 _downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.EstablishServer, message = "Establishing Server." });
                 TcpListener server = new TcpListener(IPAddress.Any, 54321);
+
                 server.Start();
                 while (true)
                 {

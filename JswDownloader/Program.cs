@@ -11,7 +11,7 @@ namespace MyApp // Note: actual namespace depends on the project name.
     class DownloadOptions
     {
         [Value(0)]
-        public string IpAddress
+        public string InfoFileTxt
         {
             get;
             set;
@@ -44,7 +44,9 @@ namespace MyApp // Note: actual namespace depends on the project name.
         {
 
             DownloadManager downloadManager = new DownloadManager();
-            MessageInfoManager messageInfoManager = new MessageInfoManager(downloadManager);
+            FileServer server = new FileServer(downloadManager);
+            List<Downloader> downloaders = new List<Downloader>();
+            MessageInfoManager messageInfoManager = new MessageInfoManager(downloadManager, server, downloaders);
             System.Timers.Timer timer = new System.Timers.Timer();
 
             timer.Interval = 1000;
@@ -54,24 +56,41 @@ namespace MyApp // Note: actual namespace depends on the project name.
             };
             timer.Start();
 
+
+
             CommandLine.Parser.Default.ParseArguments<DownloadOptions, DefulatOptions, CloneOptions>(args)
              .MapResult(
                (DownloadOptions opts) =>
                {
-                   Downloader downloader = new Downloader(downloadManager);
-                   downloader.DownloadFileAsync(opts.IpAddress, 54321);
+                   //Downloader downloader = new Downloader(downloadManager);
+                   //downloader.DownloadFileAsync(opts.IpAddress, 54321);
+
+                   JswFileInfo fif = downloadManager.ToInstance<JswFileInfo>(File.ReadAllText(opts.InfoFileTxt));
+                   downloadManager._originalFileInfo = fif;
+                   downloadManager._ownedFileInfo = downloadManager.CreateOwnedFileInfo(fif);
+                   downloadManager._dataContent = new byte[fif.fileSize];
+                   downloadManager._seeding = false;
+
+                   downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.FindNewPeer });
+
 
                    return 0;
                },
                (DefulatOptions opts) =>
                {
                    //Console.WriteLine($"Server running for {opts.File}");
-                   FileServer server = new FileServer(downloadManager,opts.File);
+                   downloadManager.CreateFileInfo(opts.File);
+                   downloadManager._seeding = true;
+#if DEBUG
                    server.Start();
+#endif
                    return 0;
                },
-               (CloneOptions opts) => { Console.WriteLine("C"); return 0; },
+               (CloneOptions opts) => { Console.WriteLine("error!"); return 0; },
                errs => 1);
+#if !DEBUG
+            server.Start();
+#endif
             while (true) ;
             return 0;
         }
