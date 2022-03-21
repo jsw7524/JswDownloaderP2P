@@ -54,6 +54,7 @@ namespace MyApp // Note: actual namespace depends on the project name.
                         {
                             case CommandType.RequestFileInfo:
                                 await RespondFileInfo(tcpStream, _downloadManager);
+
                                 break;
 
                             case CommandType.RequestBlock:

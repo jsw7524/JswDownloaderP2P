@@ -92,7 +92,7 @@ namespace JswDownloader
             int tmp=BitConverter.ToInt32(mySHA256.ComputeHash(data, 0, data.Length));
             if (tmp != soruceFileInfo.blockMap[blockIndex])
             {
-                messages.Enqueue(new MessageInfo() { type = MessageType.Misc, message = "hash dismatched and Discard downloading block" });
+                messages.Enqueue(new MessageInfo() { type = MessageType.Misc, message = "hash dismatched and Discard downloading block." });
                 return false;
             }
             data.CopyTo(WriteToDataArea, blockIndex * _blockSize);
@@ -121,6 +121,7 @@ namespace JswDownloader
             {
                 if (null == localOwnedFileInfo.blockMap[i])
                 {
+                    messages.Enqueue(new MessageInfo() { type = MessageType.Misc, message = "Check hash failed." });
                     return false;
                 }
             }

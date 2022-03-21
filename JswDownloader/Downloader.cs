@@ -30,13 +30,13 @@ namespace MyApp // Note: actual namespace depends on the project name.
             return dm.ToInstance<JswFileInfo>(Encoding.UTF8.GetString(byteFileInfo)); ;
         }
 
-        public async Task GetDataBlock(NetworkStream ns, DownloadManager dm, int i)
+        public async Task<bool> GetDataBlock(NetworkStream ns, DownloadManager dm, int i)
         {
             Command cmdGetBlock = new Command() { commandType = CommandType.RequestBlock, parameter1 = i };
             await ns.WriteAsync(cmdGetBlock.ToBytes(), 0, Marshal.SizeOf(typeof(Command)));
             byte[] ResponseBytes = new byte[(int)(dm._originalFileInfo.blockEnd[i] - dm._originalFileInfo.blockStart[i])];
             await ns.ReadAsync(ResponseBytes, 0, ResponseBytes.Length);
-            dm.WriteDataBlock(i, ResponseBytes);
+            return dm.WriteDataBlock(i, ResponseBytes);
         }
 
         public async Task EndConnection(NetworkStream ns)
@@ -73,17 +73,29 @@ namespace MyApp // Note: actual namespace depends on the project name.
                         int randomStartBlcok = random.Next(0, _downloadManager._originalFileInfo.totalBlocks - 1);
                         if (null != remoteFileInfo.blockMap[randomStartBlcok])
                         {
-                            await GetDataBlock(requestStream, _downloadManager, randomStartBlcok);
+                            isSuccess = await GetDataBlock(requestStream, _downloadManager, randomStartBlcok);
+                            if (!isSuccess)
+                            {
+                                _downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.BadBlock,data1=this.GetHashCode(), data2= requestStream, message = "Disconnecting due to Bad Block" });
+                            }
                         }
 
                         for (int i = (randomStartBlcok + 1) % _downloadManager._originalFileInfo.totalBlocks; i != randomStartBlcok; i = (i + 1) % _downloadManager._originalFileInfo.totalBlocks)
                         {
                             if (null != remoteFileInfo.blockMap[i])
                             {
-                                await GetDataBlock(requestStream, _downloadManager, i);
+                                isSuccess = await GetDataBlock(requestStream, _downloadManager, i);
+                                if (!isSuccess)
+                                {
+                                    _downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.BadBlock, data1 = this.GetHashCode(), data2 = requestStream, message = "Disconnecting due to Bad Block" });
+                                }
                             }
                         }
                         isSuccess = _downloadManager.CheckData(_downloadManager._ownedFileInfo, _downloadManager._dataContent);
+                        if (!isSuccess)
+                        {
+                            _downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.Misc, message = "Check Data failed" });
+                        }
                         await EndConnection(requestStream);
                     }
 

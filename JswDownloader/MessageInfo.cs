@@ -1,4 +1,5 @@
 ﻿using JswDownloader;
+using System.Net.Sockets;
 
 namespace MyApp // Note: actual namespace depends on the project name.
 {
@@ -12,6 +13,7 @@ namespace MyApp // Note: actual namespace depends on the project name.
         GetDataBlock,
         FindNewPeer,
         ClientLeave,
+        BadBlock,
         Misc
     }
 
@@ -20,7 +22,8 @@ namespace MyApp // Note: actual namespace depends on the project name.
     {
         public MessageType type;
         public string message;
-        public int data;
+        public object data1;
+        public object data2;
     }
 
 
@@ -46,6 +49,9 @@ namespace MyApp // Note: actual namespace depends on the project name.
             messageInfoHandlers.Add(new DisconnectFromServerHandler());
             messageInfoHandlers.Add(new DownloadFileCompletedHandler(d));
             messageInfoHandlers.Add(new FindNewPeerHandler(_downloaders, _downloadManager));
+
+            messageInfoHandlers.Add(new BadBlockHandler(_downloaders));
+
         }
 
         public void RunHandlers()
@@ -76,6 +82,25 @@ namespace MyApp // Note: actual namespace depends on the project name.
             if (message.type == MessageType.Misc)
             {
                 Console.WriteLine(message.message);
+            }
+        }
+    }
+
+    public class BadBlockHandler : MessageInfoHandler
+    {
+        List<Downloader> _ld;
+
+        public BadBlockHandler(List<Downloader> ld)
+        {
+            _ld = ld;
+        }
+        public void Deal(MessageInfo message)
+        {
+            if (message.type == MessageType.BadBlock)
+            {
+                Console.WriteLine(message.message);
+                Downloader theDownloader = _ld.Where(d=>d.GetHashCode() == (int)message.data1).FirstOrDefault();
+                theDownloader.EndConnection((NetworkStream)message.data2);
             }
         }
     }
@@ -118,7 +143,7 @@ namespace MyApp // Note: actual namespace depends on the project name.
         DownloadManager _dm;
         public DownloadFileCompletedHandler(DownloadManager dm)
         {
-            _dm=dm;
+            _dm = dm;
         }
         public void Deal(MessageInfo message)
         {
@@ -136,7 +161,7 @@ namespace MyApp // Note: actual namespace depends on the project name.
         static int numberOfPeers = 0;
         List<Downloader> _ld;
         DownloadManager _dm;
-        object _obj=false;
+        object _obj = false;
         Random _random = new Random();
         public FindNewPeerHandler(List<Downloader> ld, DownloadManager dm)
         {
@@ -158,7 +183,10 @@ namespace MyApp // Note: actual namespace depends on the project name.
 
                     Task.Run(async () =>
                     {
-                        while (!await downloader.DownloadFileAsync(_dm._ownedFileInfo.peers[_random.Next(_dm._ownedFileInfo.peers.Count)], 54321)) ;
+                        while (!await downloader.DownloadFileAsync(_dm._ownedFileInfo.peers[_random.Next(_dm._ownedFileInfo.peers.Count)], 54321))
+                        {
+                            Console.WriteLine("Finding new peer...");
+                        }
                     });
                     numberOfPeers++;
                 }
