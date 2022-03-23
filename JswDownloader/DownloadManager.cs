@@ -79,7 +79,7 @@ namespace JswDownloader
         {
             int start = (int)fileInfo.blockStart[blockIndex];
             int end = (int)fileInfo.blockEnd[blockIndex];
-            return (arraySegment.Slice(start, end - start)).ToArray();
+            return (arraySegment.Slice(start, end - start + 1)).ToArray();
         }
 
         public bool WriteDataBlock(int blockIndex, byte[] data)
@@ -156,12 +156,12 @@ namespace JswDownloader
             for (i = 0; i < fileInfo.totalBlocks - 1; i++)
             {
                 fileInfo.blockStart[i] = i * _blockSize;
-                fileInfo.blockEnd[i] = i * _blockSize + _blockSize -1 ;
-                fileInfo.blockMap[i] = BitConverter.ToInt32(mySHA256.ComputeHash(dataArea, i * _blockSize, _blockSize-1)); //index from 0
+                fileInfo.blockEnd[i] = i * _blockSize + _blockSize -1 ; // index from 0
+                fileInfo.blockMap[i] = BitConverter.ToInt32(mySHA256.ComputeHash(dataArea, i * _blockSize, _blockSize)); //index from 0
             }
             fileInfo.blockStart[i] = i * _blockSize;
-            fileInfo.blockEnd[i] = fileInfo.fileSize-1;
-            fileInfo.blockMap[i] = BitConverter.ToInt32(mySHA256.ComputeHash(dataArea, i * _blockSize, (fileInfo.fileSize - 1) - i * _blockSize));
+            fileInfo.blockEnd[i] = fileInfo.fileSize-1; // index from 0
+            fileInfo.blockMap[i] = BitConverter.ToInt32(mySHA256.ComputeHash(dataArea, i * _blockSize, (fileInfo.fileSize ) - i * _blockSize));
 
             _ownedFileInfo = fileInfo;
 
