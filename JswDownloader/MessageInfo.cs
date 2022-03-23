@@ -99,7 +99,7 @@ namespace MyApp // Note: actual namespace depends on the project name.
             if (message.type == MessageType.BadBlock)
             {
                 Console.WriteLine(message.message);
-                Downloader theDownloader = _ld.Where(d=>d.GetHashCode() == (int)message.data1).FirstOrDefault();
+                Downloader theDownloader = (Downloader)message.data1;
                 theDownloader.EndConnection((NetworkStream)message.data2);
             }
         }

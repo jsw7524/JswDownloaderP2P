@@ -43,7 +43,7 @@ namespace MyApp // Note: actual namespace depends on the project name.
         {
             Command cmdGetBlock = new Command() { commandType = CommandType.EndConnection };
             await ns.WriteAsync(cmdGetBlock.ToBytes(), 0, Marshal.SizeOf(typeof(Command)));
-            _downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.DisconnectFromServer, message = "Disconnect from a peer." });
+            _downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.Misc, message = "Disconnect from a peer." });
         }
 
 
@@ -60,42 +60,29 @@ namespace MyApp // Note: actual namespace depends on the project name.
                         _downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.Misc, message = "Fail to connect the Server." });
                         return isSuccess;
                     }
-                    _downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.ConnectToServer, message = "connecting to a peer." });
+                    _downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.Misc, message = "connecting to a peer." });
                     //Debugger.Launch();
                     using (NetworkStream requestStream = client.GetStream())
                     {
                         JswFileInfo remoteFileInfo = await GetFileInfo(requestStream, _downloadManager);
-
-
                         _downloadManager._ownedFileInfo.peers=_downloadManager._ownedFileInfo.peers.Union(remoteFileInfo.peers).ToList(); 
                         _downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.FindNewPeer });
-
                         int randomStartBlcok = random.Next(0, _downloadManager._originalFileInfo.totalBlocks - 1);
-                        if (null != remoteFileInfo.blockMap[randomStartBlcok])
-                        {
-                            isSuccess = await GetDataBlock(requestStream, _downloadManager, randomStartBlcok);
-                            if (!isSuccess)
-                            {
-                                _downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.BadBlock,data1=this.GetHashCode(), data2= requestStream, message = "Disconnecting due to Bad Block" });
-                            }
-                        }
-
-                        for (int i = (randomStartBlcok + 1) % _downloadManager._originalFileInfo.totalBlocks; i != randomStartBlcok; i = (i + 1) % _downloadManager._originalFileInfo.totalBlocks)
+                        int i = randomStartBlcok  % _downloadManager._originalFileInfo.totalBlocks;
+                        do
                         {
                             if (null != remoteFileInfo.blockMap[i])
                             {
                                 isSuccess = await GetDataBlock(requestStream, _downloadManager, i);
                                 if (!isSuccess)
                                 {
-                                    _downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.BadBlock, data1 = this.GetHashCode(), data2 = requestStream, message = "Disconnecting due to Bad Block" });
+                                    _downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.Misc, data1 = this, data2 = requestStream, message = "Disconnecting due to Bad Block" });
+                                    break;
                                 }
                             }
-                        }
+                            i = (i + 1) % _downloadManager._originalFileInfo.totalBlocks;
+                        } while (i != randomStartBlcok);
                         isSuccess = _downloadManager.CheckData(_downloadManager._ownedFileInfo, _downloadManager._dataContent);
-                        if (!isSuccess)
-                        {
-                            _downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.Misc, message = "Check Data failed" });
-                        }
                         await EndConnection(requestStream);
                     }
 

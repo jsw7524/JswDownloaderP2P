@@ -18,7 +18,7 @@ namespace JswDownloader
 
         public Queue<MessageInfo> messages = new Queue<MessageInfo>();
 
-        public int _blockSize = 2 * 1024 * 1024;
+        public int _blockSize = 32 * 1024 * 1024;
         public byte[] _dataContent;
         public JswFileInfo _originalFileInfo;
         public JswFileInfo _ownedFileInfo;
@@ -92,11 +92,11 @@ namespace JswDownloader
             int tmp=BitConverter.ToInt32(mySHA256.ComputeHash(data, 0, data.Length));
             if (tmp != soruceFileInfo.blockMap[blockIndex])
             {
-                messages.Enqueue(new MessageInfo() { type = MessageType.Misc, message = "hash dismatched and Discard downloading block." });
+                messages.Enqueue(new MessageInfo() { type = MessageType.Misc, message = "hash dismatched and discard block." });
                 return false;
             }
             data.CopyTo(WriteToDataArea, blockIndex * _blockSize);
-
+            messages.Enqueue(new MessageInfo() { type = MessageType.Misc, message = "Write block " + blockIndex });
             fileInfo.blockMap[blockIndex] = tmp;
             fileInfo.ownedBlocks += 1;
             return true;
@@ -121,7 +121,7 @@ namespace JswDownloader
             {
                 if (null == localOwnedFileInfo.blockMap[i])
                 {
-                    messages.Enqueue(new MessageInfo() { type = MessageType.Misc, message = "Check hash failed." });
+                    messages.Enqueue(new MessageInfo() { type = MessageType.Misc, message = "Check Data integrity failed." });
                     return false;
                 }
             }

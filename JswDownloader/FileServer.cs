@@ -29,11 +29,9 @@ namespace MyApp // Note: actual namespace depends on the project name.
 
         public async Task RespondDataBlock(NetworkStream ns, DownloadManager dm, int i)
         {
-            //Command cmdResponseDataBlock = new Command() { commandType = CommandType.ResponseBlock };
-            //await ns.WriteAsync(cmdResponseDataBlock.ToBytes(), 0, Marshal.SizeOf(typeof(Command)));
             byte[] responseBytes = _downloadManager.GetDataBlock(i);
             await ns.WriteAsync(responseBytes, 0, responseBytes.Length);
-
+            _downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.Misc, message = "Send Block " + i });
         }
 
         private async Task DealRequest(TcpListener server)
@@ -41,6 +39,7 @@ namespace MyApp // Note: actual namespace depends on the project name.
             try
             {
                 TcpClient client = await server.AcceptTcpClientAsync();
+                _downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.Misc, message = "Dealing a Request from " + client.Client.RemoteEndPoint });
                 byte[] requestCommandByte = new byte[Marshal.SizeOf(typeof(Command))];
                 bool jobDone = false;
                 using (var tcpStream = (client.GetStream()))
@@ -53,15 +52,16 @@ namespace MyApp // Note: actual namespace depends on the project name.
                         switch (requestCommand.commandType)
                         {
                             case CommandType.RequestFileInfo:
+                                _downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.Misc, message = "Send FileInfo to " + client .Client.RemoteEndPoint});
                                 await RespondFileInfo(tcpStream, _downloadManager);
-
                                 break;
 
                             case CommandType.RequestBlock:
+                                _downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.Misc, message = "Send DataBlock to " +client.Client.RemoteEndPoint });
                                 await RespondDataBlock(tcpStream, _downloadManager, requestCommand.parameter1);
                                 break;
                             case CommandType.EndConnection:
-                                _downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.ClientLeave });
+                                _downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.Misc , message = "Disconnect with " + client.Client.RemoteEndPoint });
                                 jobDone = true;
                                 break;
                         }
@@ -77,11 +77,11 @@ namespace MyApp // Note: actual namespace depends on the project name.
         }
 
 
-        public async void Start()
+        public void Start()
         {
             try
             {
-                _downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.EstablishServer, message = "Establishing Server." });
+                _downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.Misc, message = "Establishing Server." });
                 TcpListener server = new TcpListener(IPAddress.Any, 54321);
 
                 server.Start();

@@ -62,36 +62,23 @@ namespace MyApp // Note: actual namespace depends on the project name.
              .MapResult(
                (DownloadOptions opts) =>
                {
-                   //Downloader downloader = new Downloader(downloadManager);
-                   //downloader.DownloadFileAsync(opts.IpAddress, 54321);
-
                    JswFileInfo fif = downloadManager.ToInstance<JswFileInfo>(File.ReadAllText(opts.InfoFileTxt));
                    downloadManager._originalFileInfo = fif;
                    downloadManager._ownedFileInfo = downloadManager.CreateOwnedFileInfo(fif);
                    downloadManager._dataContent = new byte[fif.fileSize];
                    downloadManager._seeding = false;
-
                    downloadManager.messages.Enqueue(new MessageInfo() { type = MessageType.FindNewPeer });
-
-
                    return 0;
                },
                (DefulatOptions opts) =>
                {
-                   //Console.WriteLine($"Server running for {opts.File}");
                    downloadManager.CreateFileInfo(opts.File);
                    downloadManager._seeding = true;
-#if DEBUG
-                   server.Start();
-#endif
                    return 0;
                },
                (CloneOptions opts) => { Console.WriteLine("error!"); return 0; },
                errs => 1);
-#if !DEBUG
             server.Start();
-#endif
-            while (true) ;
             return 0;
         }
     }
