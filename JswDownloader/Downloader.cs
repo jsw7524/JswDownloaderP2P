@@ -34,7 +34,7 @@ namespace MyApp // Note: actual namespace depends on the project name.
         {
             Command cmdGetBlock = new Command() { commandType = CommandType.RequestBlock, parameter1 = i };
             await ns.WriteAsync(cmdGetBlock.ToBytes(), 0, Marshal.SizeOf(typeof(Command)));
-            byte[] ResponseBytes = new byte[(int)(dm._originalFileInfo.blockEnd[i] - dm._originalFileInfo.blockStart[i])];
+            byte[] ResponseBytes = new byte[(int)(dm._originalFileInfo.blockEnd[i] - dm._originalFileInfo.blockStart[i]+1)];
             await ns.ReadAsync(ResponseBytes, 0, ResponseBytes.Length);
             return dm.WriteDataBlock(i, ResponseBytes);
         }
